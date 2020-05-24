@@ -1,6 +1,7 @@
 {
 	"name": "simpletabletocsvtable",
 	"displayName": "SimpleTableToCsvTable",
+	"publisher": "TakashiHashida",
 	"description": "convert a simple table to a csv table",
 	"version": "0.0.1",
 	"engines": {
