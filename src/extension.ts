@@ -51,11 +51,12 @@ export class Convertor {
 	private tableBorder: string = "";
 
 	constructor(input_str: string) {
-		let inputLines: string[] = input_str.split('\n').map(x => x.trim()).filter(x => x.trim() !== "");
+		let inputLines: string[] = input_str.split('\n').map(x => x.trimRight()).filter(x => x.trim() !== "");
 		this.checkFormat(inputLines);
 		if (!this.validFormat) {
 			return;
 		}
+		
 		this.tableBorder = inputLines[0];
 		this.setHeaderAndBodyStringArrays(inputLines);
 		this.setColumnStartEndTable();
@@ -66,18 +67,17 @@ export class Convertor {
 	}
 
 	private setColumnStartEndTable() {
-		const columnLengthArray = this.tableBorder.replace(/  +/g, " ").split(' ').map(x => x.length);
+		const columnLengthArray = this.tableBorder.trim().replace(/  +/g, " ").split(' ').map(x => x.length);
+		let start = 0;
 		for (let columnIndex = 0; columnIndex < columnLengthArray.length; columnIndex++) {
-			let start = 0;
-			for (let i = 0; i < columnIndex; i++) {
-				start += columnLengthArray[i];
-				//count and add spaces after this column
-				while (this.tableBorder.charAt(start) === " ") {
-					start++;
-				}
+			//count and add spaces after this column
+			while (this.tableBorder.charAt(start) === " ") {
+				start++;
 			}
+			
 			let end = start + columnLengthArray[columnIndex];
 			this.columnStartEndTable.push({ "start": start, "end": end });
+			start = end + 1;
 		}
 	}
 
@@ -136,7 +136,7 @@ export class Convertor {
 		const record: string[] = [];
 		for (let i = 0; i < this.columnStartEndTable.length; i++) {
 			//blank cell is converted to single space cell
-			record.push(this.getColumnValueOfLine(lineStr, i).trimRight().replace(/^\\$/, ' '));
+			record.push(this.getColumnValueOfLine(lineStr, i).trim().replace(/^\\$/, ' '));
 		}
 		return record;
 	}
@@ -147,8 +147,7 @@ export class Convertor {
 		//used by slice(), so add 1
 		let end = startEndObj["end"] as number + 1;
 
-		//support japanese
-		//regarding multibyte char as 2bytes
+		//support japanese: regarding multibyte char as 2bytes
 		//TODO: support other languages
 		let encodedLine = iconvLite.encode(lineStr, "windows932");
 		if ((columnIndex === this.columnStartEndTable.length - 1) && (encodedLine.length > end)) {
@@ -187,24 +186,34 @@ export class Convertor {
 		}
 	}
 
-	private mergeBuffer(lineBuffer: [string[]]) {
-		if (!lineBuffer || !lineBuffer.length) {
+	private mergeBuffer(recordBufferArray: [string[]]) {
+		if (!recordBufferArray || !recordBufferArray.length) {
 			return [];
 		}
-		if (lineBuffer.length === 1) {
-			return lineBuffer[0];
-		}
-		const records: [string[]] = [] as unknown as [string[]];
-		for (const record of lineBuffer) {
-			records.push(record.map(x => `| ${x}`));
+		if (recordBufferArray.length === 1) {
+			return recordBufferArray[0];
 		}
 		const result: string[] = [];
-		for (let i = 0; i < records[0].length; i++) {
-			const i_values: string[] = [];
-			for (const record of records) {
-				i_values.push(record[i]);
+		for (let columnIndex = 0; columnIndex < recordBufferArray[0].length; columnIndex++) {
+			const columnValues: string[] = [];
+			for (const recordBuffer of recordBufferArray) {
+				const val = recordBuffer[columnIndex];
+				if(val === ""){
+					continue;
+				}
+				columnValues.push(recordBuffer[columnIndex]);
 			}
-			result.push(i_values.join("\n"));
+			let valueToAdd = "";
+			if(columnValues.length === 0){
+				valueToAdd = "";
+			}
+			else if(columnValues.length === 1){
+				valueToAdd = columnValues[0];
+			}
+			else{
+				valueToAdd = columnValues.map(x => `| ${x}`).join("\n");
+			}
+			result.push(valueToAdd);
 		}
 		return result;
 	}
@@ -218,10 +227,15 @@ export class Convertor {
 		result += '  :header-rows: 1\n';
 		result += '  \n';
 
-		for (const data of this.getCsvRecords()) {
-			//add each record respectively in order to add left padding spaces.
-			result += `  ${csvStringify([data], { header: false })}`;
+		//hmm...
+		let csvRecords: [string[]] = [] as unknown as [string[]];
+		for(const csvRecord of this.getCsvRecords()){
+			csvRecords.push(csvRecord);
 		}
+		let csvTable = `${csvStringify(csvRecords, { header: false })}`;
+		
+		//add left padding spaces.
+		result += `  ${csvTable.replace(/\n/g, '\n  ')}`;
 		return result;
 	}
 }
