@@ -27,13 +27,13 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 
 		const text = doc.getText(cur_selection);
-		const convertor = new Convertor(text);
-		if (!convertor.isValidFormat()) {
+		const converter = new Converter(text);
+		if (!converter.isValidFormat()) {
 			vscode.window.showErrorMessage('Invalid format');
 			return;
 		}
 		editor.edit(edit => {
-			edit.replace(cur_selection, convertor.getCsvTable());
+			edit.replace(cur_selection, converter.getCsvTable());
 		});
 	});
 
@@ -43,7 +43,7 @@ export function activate(context: vscode.ExtensionContext) {
 // this method is called when your extension is deactivated
 export function deactivate() { }
 
-export class Convertor {
+export class Converter {
 	private validFormat: boolean = false;
 	private headerStringArray: string[] = [];
 	private bodyStringArray: string[] = [];
