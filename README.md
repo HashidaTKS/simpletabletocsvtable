@@ -2,7 +2,7 @@
 
 ## Features
 
-In reStructuredText, convert a simple table to csv table format.
+Converting a simple table to csv table format in reStructuredText.
 
 1. Select a simple table text
 2. Execute "Convert Simple Text To Csv Text" in context menu 
